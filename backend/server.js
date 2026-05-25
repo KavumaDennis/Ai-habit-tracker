@@ -11,36 +11,43 @@ import { notFound, errorHandler } from "./middleware/errorHandler.js"
 
 const app = express()
 
-const allowedOrigins = process.env.CLIENT_URL
-    ? process.env.CLIENT_URL.split(",")
-        .map(s => s.trim())
-    : []
 
 const corsOptions = {
-    origin(origin, cb) {
-        //Allow request with no origin (curl, same-origin, server-to-server)
-        if (!origin) return cb(null, true);
-        //Allow any localhost / 127.0.0.1 in development
+    origin: function (origin, callback) {
+        const allowedOrigins = (process.env.CLIENT_URL || "")
+            .split(",")
+            .map(o => o.trim())
+            .filter(Boolean);
+
+        // allow no-origin requests (Postman, health checks, etc.)
+        if (!origin) return callback(null, true);
+
+        // allow localhost (dev)
         if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
-            return cb(null, true)
+            return callback(null, true);
         }
-        //Allow anything explicitly listed in CLIENT_URL (coma-separated)
-        if (allowedOrigins.includes(origin)) return cb(null, true)
-        return cb(new Error(`Origin ${origin} not allowed by CORS`))
+
+        // allow production frontend
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        // DO NOT THROW ERROR → just block safely
+        return callback(null, false);
     },
+
     credentials: true,
-    methods: ["GET", "POST", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
 };
 
 app.get("/api/health", (req, res) => {
     res.json({ status: "ok", time: new Date().toISOString() })
 })
 
-app.use(express.json({ limit: "1mb" }))
-
 app.use(cors(corsOptions))
 app.options("*", cors(corsOptions))
+app.use(express.json({ limit: "1mb" }))
 
 app.use("/api/auth", authRoutes)
 app.use("/api/habits", habitRoutes)
