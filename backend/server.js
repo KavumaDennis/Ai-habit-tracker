@@ -11,10 +11,10 @@ import { notFound, errorHandler } from "./middleware/errorHandler.js"
 
 const app = express()
 
-const allowedOrigins = (process.env.CLIENT_URL || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
+const allowedOrigins = process.env.CLIENT_URL
+    ? process.env.CLIENT_URL.split(",")
+        .map(s => s.trim())
+    : []
 
 const corsOptions = {
     origin(origin, cb) {
@@ -37,9 +37,10 @@ app.get("/api/health", (req, res) => {
     res.json({ status: "ok", time: new Date().toISOString() })
 })
 
+app.use(express.json({ limit: "1mb" }))
+
 app.use(cors(corsOptions))
 app.options("*", cors(corsOptions))
-app.use(express.json({ limit: "1mb" }))
 
 app.use("/api/auth", authRoutes)
 app.use("/api/habits", habitRoutes)
@@ -54,7 +55,7 @@ const PORT = process.env.PORT || 8000
 connectDB()
     .then(() => {
         app.listen(PORT, () => {
-            console.log(`Server running on http://localhost:${PORT}`);
+            console.log(`Server running on port ${PORT} - env: ${process.env.NODE_ENV || "development"}`);
         });
     })
     .catch((err) => {
