@@ -55,6 +55,7 @@ app.use("/api/auth", authRoutes)
 app.use("/api/habits", habitRoutes)
 app.use("/api/logs", logRoutes)
 app.use("/api/ai", aiRoutes)
+console.log("🔥 AUTH ROUTES LOADED")
 
 app.use(notFound)
 app.use(errorHandler)
