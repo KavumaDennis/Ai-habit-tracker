@@ -13,42 +13,39 @@ import { notFound, errorHandler } from "./middleware/errorHandler.js"
 
 const app = express()
 
+const allowedOrigins = [
+    "https://ai-habit-tracker-tawny.vercel.app",
+    "https://ai-habit-tracker-black.vercel.app",
+    "http://localhost:5173"
+];
 
-const corsOptions = {
+app.use(cors({
     origin: function (origin, callback) {
-        const allowedOrigins = (process.env.CLIENT_URL || "")
-            .split(",")
-            .map(o => o.trim())
-            .filter(Boolean);
 
-        // allow no-origin requests (Postman, health checks, etc.)
+        // allow requests without origin
         if (!origin) return callback(null, true);
 
-        // allow localhost (dev)
-        if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
-            return callback(null, true);
-        }
-
-        // allow production frontend
         if (allowedOrigins.includes(origin)) {
             return callback(null, true);
         }
 
-        // DO NOT THROW ERROR → just block safely
-        return callback(null, false);
+        return callback(new Error("Not allowed by CORS"));
     },
 
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"]
-};
+}));
+
+
 
 app.get("/api/health", (req, res) => {
     res.json({ status: "ok", time: new Date().toISOString() })
 })
 
-app.use(cors(corsOptions))
-app.options("*", cors(corsOptions))
+// app.use(cors(corsOptions))
+// app.options("*", cors(corsOptions))
+app.options("*", cors())
 app.use(express.json({ limit: "1mb" }))
 
 app.use("/api/auth", authRoutes)
